@@ -17,12 +17,14 @@
         <!-- Main Timer Section -->
         <section class="timer-section">
             <div class="timer-display">
-                <div class="time">
-                    <span class="hours" id="hours">00</span>
-                    <span class="separator">:</span>
-                    <span class="minutes" id="minutes">00</span>
-                    <span class="separator">:</span>
-                    <span class="seconds" id="seconds">00</span>
+                <div class="time-container">
+                    <div class="time" id="timerDisplay">
+                        <span class="hours" id="hours">00</span>
+                        <span class="separator">:</span>
+                        <span class="minutes" id="minutes">00</span>
+                        <span class="separator">:</span>
+                        <span class="seconds" id="seconds">00</span>
+                    </div>
                 </div>
             </div>
 
@@ -48,6 +50,34 @@
                     <span class="btn-icon">✓</span>
                     Enregistrer la session
                 </button>
+            </div>
+        </section>
+
+        <!-- Graph Section -->
+        <section class="graph-section">
+            <h3 class="section-title">📊 Progression</h3>
+            <div class="graph-container">
+                <svg class="graph-svg" id="graphChart" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="graphGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#007AFF;stop-opacity:0.2" />
+                            <stop offset="100%" style="stop-color:#007AFF;stop-opacity:0.01" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Grid lines -->
+                    <line x1="0" y1="50" x2="100" y2="50" stroke="#E5E5EA" stroke-width="0.2"/>
+                    <!-- Graph line will be inserted here -->
+                    <polyline class="graph-line" points="" fill="url(#graphGradient)" stroke="#007AFF" stroke-width="0.8"/>
+                </svg>
+            </div>
+            <div class="graph-legend">
+                <span class="legend-day" id="day1">L</span>
+                <span class="legend-day" id="day2">M</span>
+                <span class="legend-day" id="day3">M</span>
+                <span class="legend-day" id="day4">J</span>
+                <span class="legend-day" id="day5">V</span>
+                <span class="legend-day" id="day6">S</span>
+                <span class="legend-day" id="day7">D</span>
             </div>
         </section>
 
@@ -94,6 +124,39 @@
             <div class="stat-card">
                 <span class="stat-label">Sessions</span>
                 <span class="stat-value" id="sessionCount">0</span>
+            </div>
+        </section>
+
+        <!-- Goals Section -->
+        <section class="goals-section">
+            <h3 class="section-title">🎯 Objectifs</h3>
+            <div class="goals-container">
+                <div class="goal-item">
+                    <div class="goal-header">
+                        <span class="goal-name">Par jour</span>
+                        <input type="number" class="goal-input" id="dailyGoal" value="8" min="1" max="24">
+                        <span class="goal-unit">h</span>
+                    </div>
+                    <div class="goal-progress" id="dailyProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="dailyFill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text" id="dailyText">0 / 8h</span>
+                    </div>
+                </div>
+                <div class="goal-item">
+                    <div class="goal-header">
+                        <span class="goal-name">Par semaine</span>
+                        <input type="number" class="goal-input" id="weeklyGoal" value="40" min="1" max="168">
+                        <span class="goal-unit">h</span>
+                    </div>
+                    <div class="goal-progress" id="weeklyProgress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="weeklyFill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text" id="weeklyText">0 / 40h</span>
+                    </div>
+                </div>
             </div>
         </section>
     </div>

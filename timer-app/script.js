@@ -27,16 +27,28 @@ class WorkTimer {
         // Tab buttons
         this.tabButtons = document.querySelectorAll('.tab-btn');
 
+        // Goals elements
+        this.dailyGoalInput = document.getElementById('dailyGoal');
+        this.weeklyGoalInput = document.getElementById('weeklyGoal');
+        this.dailyFill = document.getElementById('dailyFill');
+        this.weeklyFill = document.getElementById('weeklyFill');
+        this.dailyText = document.getElementById('dailyText');
+        this.weeklyText = document.getElementById('weeklyText');
+
         // Storage
         this.storageKey = 'workTimerSessions';
+        this.goalsKey = 'workTimerGoals';
 
         // User name
         this.userName = this.getUserName();
 
         // Initialize
         this.initEventListeners();
+        this.loadGoals();
         this.loadSessions();
         this.updateStats();
+        this.renderGraph();
+        this.updateGoalsProgress();
     }
 
     /* ==========================================
@@ -67,6 +79,12 @@ class WorkTimer {
         this.tabButtons.forEach(btn => {
             btn.addEventListener('click', (e) => this.switchTab(e.target.closest('.tab-btn')));
         });
+
+        // Goal inputs
+        this.dailyGoalInput.addEventListener('change', () => this.saveGoals());
+        this.weeklyGoalInput.addEventListener('change', () => this.saveGoals());
+        this.dailyGoalInput.addEventListener('input', () => this.updateGoalsProgress());
+        this.weeklyGoalInput.addEventListener('input', () => this.updateGoalsProgress());
     }
 
     /* ==========================================
@@ -226,6 +244,8 @@ class WorkTimer {
 
         // Update stats
         this.updateStats();
+        this.renderGraph();
+        this.updateGoalsProgress();
     }
 
     getWeekSessions(sessions, now) {
@@ -305,6 +325,124 @@ class WorkTimer {
         const tab = button.dataset.tab;
         this.weekLeaderboard.classList.toggle('hidden', tab !== 'week');
         this.monthLeaderboard.classList.toggle('hidden', tab !== 'month');
+    }
+
+    /* ==========================================
+       GOALS MANAGEMENT
+       ========================================== */
+
+    loadGoals() {
+        const goals = JSON.parse(localStorage.getItem(this.goalsKey) || '{}');
+        this.dailyGoalInput.value = goals.daily || 8;
+        this.weeklyGoalInput.value = goals.weekly || 40;
+    }
+
+    saveGoals() {
+        const goals = {
+            daily: parseInt(this.dailyGoalInput.value) || 8,
+            weekly: parseInt(this.weeklyGoalInput.value) || 40
+        };
+        localStorage.setItem(this.goalsKey, JSON.stringify(goals));
+        this.updateGoalsProgress();
+    }
+
+    updateGoalsProgress() {
+        const sessions = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+        const now = new Date();
+
+        // Today's total
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+        const todaySessions = sessions.filter(s => new Date(s.timestamp) > todayStart);
+        const todayTotal = todaySessions.reduce((sum, s) => sum + s.seconds, 0) / 3600; // in hours
+
+        // This week's total
+        const weekSessions = this.getWeekSessions(sessions, now);
+        const weekTotal = weekSessions.reduce((sum, s) => sum + s.seconds, 0) / 3600; // in hours
+
+        // Get goals
+        const dailyGoal = parseInt(this.dailyGoalInput.value) || 8;
+        const weeklyGoal = parseInt(this.weeklyGoalInput.value) || 40;
+
+        // Update daily progress
+        const dailyPercent = Math.min((todayTotal / dailyGoal) * 100, 100);
+        this.dailyFill.style.width = dailyPercent + '%';
+        this.dailyText.textContent = `${todayTotal.toFixed(1)} / ${dailyGoal}h`;
+
+        // Update weekly progress
+        const weeklyPercent = Math.min((weekTotal / weeklyGoal) * 100, 100);
+        this.weeklyFill.style.width = weeklyPercent + '%';
+        this.weeklyText.textContent = `${weekTotal.toFixed(1)} / ${weeklyGoal}h`;
+    }
+
+    /* ==========================================
+       GRAPH MANAGEMENT
+       ========================================== */
+
+    renderGraph() {
+        const sessions = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+        const now = new Date();
+
+        // Get daily totals for the last 7 days
+        const dailyData = this.getDailyData(sessions, now);
+
+        // Create SVG path
+        if (dailyData.length === 0) {
+            const graphLine = document.querySelector('.graph-line');
+            graphLine.setAttribute('points', '');
+            return;
+        }
+
+        const points = this.createSmoothPath(dailyData);
+        const graphLine = document.querySelector('.graph-line');
+        graphLine.setAttribute('points', points);
+    }
+
+    getDailyData(sessions, now) {
+        const data = [];
+
+        // Get last 7 days
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            date.setHours(0, 0, 0, 0);
+
+            const nextDate = new Date(date);
+            nextDate.setDate(nextDate.getDate() + 1);
+
+            const daySessions = sessions.filter(s => {
+                const sDate = new Date(s.timestamp);
+                return sDate >= date && sDate < nextDate;
+            });
+
+            const dayTotal = daySessions.reduce((sum, s) => sum + s.seconds, 0) / 3600;
+            data.push(dayTotal);
+        }
+
+        return data;
+    }
+
+    createSmoothPath(data) {
+        if (data.length === 0) return '';
+
+        const maxValue = Math.max(...data, 1);
+        const padding = 5;
+        const width = 100 - padding * 2;
+        const height = 60 - padding * 2;
+
+        // Normalize data to SVG coordinates
+        const points = data.map((value, index) => {
+            const x = padding + (index / (data.length - 1)) * width;
+            const y = padding + height - (value / maxValue) * height;
+            return `${x},${y}`;
+        });
+
+        // Add base points for filling
+        const lastX = padding + width;
+        const firstX = padding;
+        const baseY = padding + height;
+
+        return `${firstX},${baseY} ${points.join(' ')} ${lastX},${baseY}`;
     }
 
     /* ==========================================
