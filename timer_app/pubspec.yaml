@@ -1,0 +1,33 @@
+name: focus_timer
+description: A premium work timer app with elegant Apple-like design.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # State management — lightweight yet powerful
+  provider: ^6.1.1
+  # Smooth charts
+  fl_chart: ^0.68.0
+  # Local persistence
+  shared_preferences: ^2.2.2
+  # Smooth page indicator for swipe dots
+  smooth_page_indicator: ^1.1.0
+  # Beautiful animations
+  flutter_animate: ^4.5.0
+  # UUID for session IDs
+  uuid: ^4.3.3
+  # Google Fonts (Inter)
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
