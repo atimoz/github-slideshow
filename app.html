@@ -46,16 +46,47 @@
   .header {
     text-align: center;
     padding: 24px 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
   }
   .header h1 {
     font-size: 34px;
     font-weight: 700;
     letter-spacing: -0.5px;
   }
-  .header p {
+  .header-right {
+    position: absolute;
+    right: 16px;
+  }
+  .header-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 0 8px;
+  }
+  .settings-btn {
+    background: var(--card);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    font-size: 20px;
+    transition: all 0.2s;
+  }
+  .settings-btn:hover { background: var(--bg); transform: scale(1.05); }
+  .subtitle {
+    text-align: center;
     color: var(--text-secondary);
     font-size: 15px;
-    margin-top: 4px;
+    margin-bottom: 8px;
   }
 
   /* Timer Card */
@@ -207,7 +238,7 @@
     font-size: 14px;
   }
 
-  /* Tabs */
+  /* Chart Tabs */
   .tabs {
     display: flex;
     background: rgba(0,0,0,0.04);
@@ -235,84 +266,36 @@
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
 
-  /* Leaderboard */
-  .leaderboard {
+  /* Chart */
+  .chart-card {
     background: var(--card);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
-    overflow: hidden;
+    padding: 20px;
     margin-bottom: 24px;
   }
-  .lb-item {
-    display: flex;
-    align-items: center;
-    padding: 14px 20px;
-    border-bottom: 1px solid var(--border);
-    gap: 14px;
-    transition: background 0.15s;
+  .chart-card canvas {
+    width: 100%;
+    height: 200px;
   }
-  .lb-item:last-child { border-bottom: none; }
-  .lb-item:hover { background: #fafafa; }
-
-  .lb-rank {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+  .chart-summary {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 14px;
-    flex-shrink: 0;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
   }
-  .lb-rank.gold { background: #fff3cd; color: #d4a017; }
-  .lb-rank.silver { background: #e8e8e8; color: #6b6b6b; }
-  .lb-rank.bronze { background: #ffe8d6; color: #c67030; }
-  .lb-rank.default { background: var(--bg); color: var(--text-secondary); }
-
-  .lb-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .chart-summary-item {
+    text-align: center;
+  }
+  .chart-summary-value {
     font-size: 18px;
-    flex-shrink: 0;
+    font-weight: 700;
   }
-
-  .lb-info { flex: 1; min-width: 0; }
-  .lb-name {
-    font-weight: 600;
-    font-size: 15px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .lb-name .you-badge {
-    font-size: 11px;
-    background: var(--accent-light);
-    color: var(--accent);
-    padding: 2px 8px;
-    border-radius: 6px;
-    margin-left: 6px;
-    font-weight: 600;
-  }
-  .lb-streak {
+  .chart-summary-label {
     font-size: 12px;
     color: var(--text-secondary);
     margin-top: 2px;
-  }
-  .lb-hours {
-    font-weight: 700;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-  .lb-unit {
-    font-weight: 400;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-left: 2px;
   }
 
   /* Progress Bar */
@@ -350,8 +333,11 @@
     background: linear-gradient(90deg, var(--accent), #a855f7);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  .progress-fill.over {
+    background: linear-gradient(90deg, var(--green), #2ebd4e);
+  }
 
-  /* Add User Modal */
+  /* Modal / Settings */
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -376,10 +362,12 @@
     border-radius: 20px;
     padding: 28px 24px;
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     transform: scale(0.95);
     transition: transform 0.25s;
+    max-height: 90vh;
+    overflow-y: auto;
   }
   .modal-overlay.show .modal {
     transform: scale(1);
@@ -387,28 +375,41 @@
   .modal h3 {
     font-size: 20px;
     font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .modal p {
-    font-size: 14px;
-    color: var(--text-secondary);
     margin-bottom: 20px;
   }
-  .modal input {
+
+  .setting-group {
+    margin-bottom: 20px;
+  }
+  .setting-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .setting-input {
     width: 100%;
-    padding: 14px 16px;
+    padding: 12px 16px;
     border: 1.5px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: inherit;
     font-size: 15px;
     outline: none;
     transition: border-color 0.2s;
-    margin-bottom: 16px;
   }
-  .modal input:focus { border-color: var(--accent); }
+  .setting-input:focus { border-color: var(--accent); }
+  .setting-hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
   .modal-actions {
     display: flex;
     gap: 10px;
+    margin-top: 24px;
   }
   .modal-actions .btn { flex: 1; justify-content: center; padding: 12px 20px; }
   .btn-ghost {
@@ -416,6 +417,16 @@
     color: var(--text-secondary);
   }
   .btn-ghost:hover { background: var(--bg); }
+  .btn-danger {
+    background: rgba(255,59,48,0.1);
+    color: var(--red);
+    font-size: 14px;
+    padding: 12px 20px;
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .btn-danger:hover { background: rgba(255,59,48,0.15); }
 
   /* Name Input */
   .name-setup {
@@ -467,7 +478,6 @@
     .stat-card .stat-value { font-size: 24px; }
   }
 
-  /* Pulse animation for running timer */
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -485,18 +495,24 @@
 <script>
 // ─── Data Layer ───
 const STORAGE_KEY = 'workTimerData';
-const AVATARS_BG = [
-  '#FFD6D6','#D6E4FF','#D6FFE4','#FFF3D6','#F0D6FF',
-  '#D6FFF0','#FFD6F0','#E4D6FF','#D6F0FF','#FFDFD6'
-];
+const SETTINGS_KEY = 'workTimerSettings';
 
 function loadData() {
   const d = localStorage.getItem(STORAGE_KEY);
-  return d ? JSON.parse(d) : { currentUser: null, users: {}, sessions: [] };
+  return d ? JSON.parse(d) : { currentUser: null, sessions: [] };
 }
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveData(d) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+}
+
+function loadSettings() {
+  const s = localStorage.getItem(SETTINGS_KEY);
+  return s ? JSON.parse(s) : { goalDay: 8, goalWeek: 40, goalYear: 1800 };
+}
+
+function saveSettings(s) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
 }
 
 function getWeekKey(date) {
@@ -505,11 +521,6 @@ function getWeekKey(date) {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   const monday = new Date(d.setDate(diff));
   return `${monday.getFullYear()}-W${String(Math.ceil((monday.getDate()) / 7 + 1)).padStart(2, '0')}-${monday.getMonth()}`;
-}
-
-function getMonthKey(date) {
-  const d = new Date(date);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function getTodayKey(date) {
@@ -536,54 +547,22 @@ function formatTime(ts) {
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-function getInitials(name) {
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
-}
-
-function avatarColor(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATARS_BG[Math.abs(hash) % AVATARS_BG.length];
-}
-
 // ─── App State ───
 let data = loadData();
+let settings = loadSettings();
 let timerStart = null;
 let timerInterval = null;
 let elapsed = 0;
-let activeTab = 'week';
-let showModal = false;
+let chartTab = 'day';
+let showSettings = false;
 
-// Seed demo data if first time
-if (data.sessions.length === 0 && !data.currentUser) {
-  seedDemoData();
-}
-
-function seedDemoData() {
-  const names = ['Marie Dupont', 'Lucas Martin', 'Emma Bernard', 'Hugo Petit', 'Léa Robert'];
-  const now = Date.now();
-  data.users = {};
-  names.forEach(n => { data.users[n] = { name: n, created: now }; });
-  data.sessions = [];
-
-  // Generate realistic sessions for past 30 days
-  for (let day = 0; day < 30; day++) {
-    const dayTs = now - day * 86400000;
-    names.forEach(name => {
-      const sessionsCount = Math.floor(Math.random() * 3) + 1;
-      for (let s = 0; s < sessionsCount; s++) {
-        const startHour = 8 + Math.floor(Math.random() * 10);
-        const duration = (30 + Math.floor(Math.random() * 150)) * 60000;
-        const start = new Date(dayTs);
-        start.setHours(startHour, Math.floor(Math.random()*60), 0, 0);
-        data.sessions.push({
-          user: name,
-          start: start.getTime(),
-          duration: duration
-        });
-      }
-    });
+// Migrate old data format: remove fake users, keep only current user sessions
+if (data.users) {
+  const user = data.currentUser;
+  if (user) {
+    data.sessions = data.sessions.filter(s => s.user === user);
   }
+  delete data.users;
   saveData(data);
 }
 
@@ -603,25 +582,23 @@ function render() {
     ${renderHeader()}
     ${renderTimer()}
     ${renderTodayStats()}
-    ${renderWeeklyGoal()}
+    ${renderGoals()}
+    <h2 class="section-title">Statistiques</h2>
+    ${renderChartTabs()}
+    ${renderChart()}
     <h2 class="section-title">Sessions du jour</h2>
     ${renderTodaySessions()}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h2 class="section-title" style="margin-bottom:0">Classement</h2>
-      <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px" onclick="showModal=true;render()">+ Ajouter</button>
-    </div>
-    ${renderTabs()}
-    ${renderLeaderboard()}
-    ${showModal ? renderModal() : ''}
+    ${showSettings ? renderSettingsModal() : ''}
   `;
   bindEvents();
+  requestAnimationFrame(() => drawChart());
 }
 
 function renderSetup() {
   return `
     <div class="name-setup">
       <h2>Work Timer</h2>
-      <p>Entrez votre nom pour commencer à<br>suivre votre temps de travail</p>
+      <p>Entrez votre nom pour commencer a<br>suivre votre temps de travail</p>
       <input type="text" id="nameInput" placeholder="Votre nom" maxlength="30">
       <br>
       <button class="btn btn-primary" onclick="startWithName()">Commencer</button>
@@ -634,17 +611,23 @@ function startWithName() {
   const name = input.value.trim();
   if (!name) return;
   data.currentUser = name;
-  if (!data.users[name]) data.users[name] = { name, created: Date.now() };
   saveData(data);
   render();
 }
 
 function renderHeader() {
   return `
-    <div class="header">
-      <h1>Work Timer</h1>
-      <p>Bonjour, ${data.currentUser.split(' ')[0]} !</p>
+    <div class="header-wrapper">
+      <div style="text-align:center">
+        <h1 style="font-size:34px;font-weight:700;letter-spacing:-0.5px">Work Timer</h1>
+      </div>
+      <div class="header-right">
+        <button class="settings-btn" onclick="showSettings=true;render()" title="Parametres">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
     </div>
+    <div class="subtitle">Bonjour, ${data.currentUser.split(' ')[0]} !</div>
   `;
 }
 
@@ -653,15 +636,15 @@ function renderTimer() {
   return `
     <div class="timer-card ${isRunning ? 'running' : ''}">
       <div class="timer-display">${formatDuration(elapsed)}</div>
-      <div class="timer-label">${isRunning ? 'En cours…' : 'Prêt'}</div>
+      <div class="timer-label">${isRunning ? 'En cours...' : 'Pret'}</div>
       <div class="timer-buttons">
         <button class="btn btn-primary ${isRunning ? 'running' : ''}" id="toggleBtn">
           ${isRunning
-            ? '<svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="4" width="10" height="12" rx="1.5"/></svg>Arrêter'
-            : '<svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><polygon points="6,3 17,10 6,17"/></svg>Démarrer'}
+            ? '<svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><rect x="5" y="4" width="10" height="12" rx="1.5"/></svg>Arreter'
+            : '<svg class="btn-icon" viewBox="0 0 20 20" fill="currentColor"><polygon points="6,3 17,10 6,17"/></svg>Demarrer'}
         </button>
         ${!isRunning && elapsed === 0 ? '' : !isRunning ? `
-          <button class="btn btn-secondary" id="resetBtn">Réinit.</button>
+          <button class="btn btn-secondary" id="resetBtn">Reinit.</button>
         ` : ''}
       </div>
     </div>
@@ -670,7 +653,7 @@ function renderTimer() {
 
 function renderTodayStats() {
   const today = getTodayKey();
-  const todaySessions = data.sessions.filter(s => s.user === data.currentUser && getTodayKey(s.start) === today);
+  const todaySessions = data.sessions.filter(s => getTodayKey(s.start) === today);
   const totalToday = todaySessions.reduce((a, s) => a + s.duration, 0);
   const count = todaySessions.length;
   return `
@@ -687,29 +670,244 @@ function renderTodayStats() {
   `;
 }
 
-function renderWeeklyGoal() {
+function renderGoals() {
+  const today = getTodayKey();
+  const todayTotal = data.sessions.filter(s => getTodayKey(s.start) === today).reduce((a,s) => a+s.duration, 0) + elapsed;
+  const dayPct = Math.min(100, (todayTotal / (settings.goalDay * 3600000)) * 100);
+
   const weekKey = getWeekKey(Date.now());
-  const weekSessions = data.sessions.filter(s => s.user === data.currentUser && getWeekKey(s.start) === weekKey);
-  const totalWeek = weekSessions.reduce((a, s) => a + s.duration, 0) + elapsed;
-  const goalMs = 40 * 3600000; // 40h goal
-  const pct = Math.min(100, (totalWeek / goalMs) * 100);
-  return `
-    <div class="progress-wrapper">
-      <div class="progress-header">
-        <span class="progress-title">Objectif semaine</span>
-        <span class="progress-value">${formatHours(totalWeek)} / 40h</span>
+  const weekTotal = data.sessions.filter(s => getWeekKey(s.start) === weekKey).reduce((a,s) => a+s.duration, 0) + elapsed;
+  const weekPct = Math.min(100, (weekTotal / (settings.goalWeek * 3600000)) * 100);
+
+  const year = new Date().getFullYear();
+  const yearTotal = data.sessions.filter(s => new Date(s.start).getFullYear() === year).reduce((a,s) => a+s.duration, 0) + elapsed;
+  const yearPct = Math.min(100, (yearTotal / (settings.goalYear * 3600000)) * 100);
+
+  function bar(title, current, goal, pct) {
+    const over = current >= goal * 3600000;
+    return `
+      <div class="progress-wrapper">
+        <div class="progress-header">
+          <span class="progress-title">${title}</span>
+          <span class="progress-value">${formatHours(current)} / ${goal}h</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill ${over ? 'over' : ''}" style="width:${pct}%"></div>
+        </div>
       </div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${pct}%"></div>
+    `;
+  }
+
+  return bar('Objectif jour', todayTotal, settings.goalDay, dayPct)
+       + bar('Objectif semaine', weekTotal, settings.goalWeek, weekPct)
+       + bar('Objectif annee', yearTotal, settings.goalYear, yearPct);
+}
+
+function renderChartTabs() {
+  return `
+    <div class="tabs">
+      <button class="tab ${chartTab==='day'?'active':''}" onclick="chartTab='day';render()">Journee</button>
+      <button class="tab ${chartTab==='week'?'active':''}" onclick="chartTab='week';render()">Semaine</button>
+      <button class="tab ${chartTab==='year'?'active':''}" onclick="chartTab='year';render()">Annee</button>
+    </div>
+  `;
+}
+
+function renderChart() {
+  const { labels, values, total, avg } = getChartData();
+  return `
+    <div class="chart-card">
+      <canvas id="statsChart" height="200"></canvas>
+      <div class="chart-summary">
+        <div class="chart-summary-item">
+          <div class="chart-summary-value" style="color:var(--accent)">${formatHours(total)}</div>
+          <div class="chart-summary-label">Total</div>
+        </div>
+        <div class="chart-summary-item">
+          <div class="chart-summary-value" style="color:var(--green)">${formatHours(avg)}</div>
+          <div class="chart-summary-label">Moyenne</div>
+        </div>
+        <div class="chart-summary-item">
+          <div class="chart-summary-value">${values.filter(v => v > 0).length}</div>
+          <div class="chart-summary-label">${chartTab === 'year' ? 'Mois actifs' : chartTab === 'week' ? 'Jours actifs' : 'Heures actives'}</div>
+        </div>
       </div>
     </div>
   `;
 }
 
+function getChartData() {
+  const now = new Date();
+  let labels = [], values = [];
+
+  if (chartTab === 'day') {
+    // Hours of the day (0h-23h)
+    const today = getTodayKey();
+    const todaySessions = data.sessions.filter(s => getTodayKey(s.start) === today);
+    for (let h = 0; h < 24; h++) {
+      labels.push(`${h}h`);
+      let total = 0;
+      todaySessions.forEach(s => {
+        const start = new Date(s.start);
+        const end = new Date(s.start + s.duration);
+        // Overlap with this hour slot
+        const slotStart = new Date(start); slotStart.setHours(h, 0, 0, 0);
+        const slotEnd = new Date(start); slotEnd.setHours(h + 1, 0, 0, 0);
+        const overlapStart = Math.max(s.start, slotStart.getTime());
+        const overlapEnd = Math.min(s.start + s.duration, slotEnd.getTime());
+        if (overlapEnd > overlapStart) total += overlapEnd - overlapStart;
+      });
+      // Add current running session overlap
+      if (timerStart) {
+        const slotStart = new Date(now); slotStart.setHours(h, 0, 0, 0);
+        const slotEnd = new Date(now); slotEnd.setHours(h + 1, 0, 0, 0);
+        const overlapStart = Math.max(timerStart, slotStart.getTime());
+        const overlapEnd = Math.min(Date.now(), slotEnd.getTime());
+        if (overlapEnd > overlapStart) total += overlapEnd - overlapStart;
+      }
+      values.push(total);
+    }
+  } else if (chartTab === 'week') {
+    // Days of the week (Lun-Dim)
+    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const weekKey = getWeekKey(Date.now());
+    // Find Monday of current week
+    const d = new Date(now);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + i);
+      const dayKey = getTodayKey(dayDate.getTime());
+      labels.push(dayNames[i]);
+      let total = data.sessions.filter(s => getTodayKey(s.start) === dayKey).reduce((a, s) => a + s.duration, 0);
+      // Add current elapsed for today
+      if (dayKey === getTodayKey() && timerStart) total += elapsed;
+      values.push(total);
+    }
+  } else {
+    // Months of the year
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const year = now.getFullYear();
+    for (let m = 0; m < 12; m++) {
+      labels.push(monthNames[m]);
+      let total = data.sessions.filter(s => {
+        const sd = new Date(s.start);
+        return sd.getFullYear() === year && sd.getMonth() === m;
+      }).reduce((a, s) => a + s.duration, 0);
+      // Add current elapsed for current month
+      if (m === now.getMonth() && timerStart) total += elapsed;
+      values.push(total);
+    }
+  }
+
+  const total = values.reduce((a, v) => a + v, 0);
+  const nonZero = values.filter(v => v > 0).length;
+  const avg = nonZero > 0 ? total / nonZero : 0;
+
+  return { labels, values, total, avg };
+}
+
+function drawChart() {
+  const canvas = document.getElementById('statsChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const { labels, values } = getChartData();
+  const w = rect.width;
+  const h = rect.height;
+  const padding = { top: 20, right: 10, bottom: 30, left: 10 };
+  const chartW = w - padding.left - padding.right;
+  const chartH = h - padding.top - padding.bottom;
+
+  const maxVal = Math.max(...values, 1);
+  const barCount = labels.length;
+  const gap = chartTab === 'year' ? 6 : chartTab === 'week' ? 8 : 2;
+  const barW = (chartW - gap * (barCount - 1)) / barCount;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Goal line
+  let goalMs = 0;
+  if (chartTab === 'day') goalMs = settings.goalDay * 3600000 / 24;
+  else if (chartTab === 'week') goalMs = settings.goalWeek * 3600000 / 7;
+  else goalMs = settings.goalYear * 3600000 / 12;
+
+  const maxDisplay = Math.max(maxVal, goalMs);
+
+  if (goalMs > 0) {
+    const goalY = padding.top + chartH - (goalMs / maxDisplay) * chartH;
+    ctx.strokeStyle = 'rgba(255, 59, 48, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, goalY);
+    ctx.lineTo(w - padding.right, goalY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Bars
+  const accentRGB = [0, 113, 227];
+  const greenRGB = [52, 199, 89];
+
+  labels.forEach((label, i) => {
+    const x = padding.left + i * (barW + gap);
+    const val = values[i];
+    const barH = maxDisplay > 0 ? (val / maxDisplay) * chartH : 0;
+    const y = padding.top + chartH - barH;
+
+    // Bar
+    const isOverGoal = goalMs > 0 && val >= goalMs;
+    const gradient = ctx.createLinearGradient(x, y, x, padding.top + chartH);
+    if (isOverGoal) {
+      gradient.addColorStop(0, `rgba(${greenRGB.join(',')}, 0.9)`);
+      gradient.addColorStop(1, `rgba(${greenRGB.join(',')}, 0.4)`);
+    } else {
+      gradient.addColorStop(0, `rgba(${accentRGB.join(',')}, 0.9)`);
+      gradient.addColorStop(1, `rgba(${accentRGB.join(',')}, 0.4)`);
+    }
+    ctx.fillStyle = gradient;
+
+    const radius = Math.min(barW / 2, 4);
+    if (barH > 0) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + barW - radius, y);
+      ctx.quadraticCurveTo(x + barW, y, x + barW, y + radius);
+      ctx.lineTo(x + barW, padding.top + chartH);
+      ctx.lineTo(x, padding.top + chartH);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.fill();
+    }
+
+    // Label
+    ctx.fillStyle = '#86868b';
+    ctx.font = `500 ${chartTab === 'day' ? 9 : 11}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    // Show fewer labels for day view
+    if (chartTab === 'day') {
+      if (i % 3 === 0) ctx.fillText(label, x + barW / 2, h - 6);
+    } else {
+      ctx.fillText(label, x + barW / 2, h - 6);
+    }
+  });
+}
+
 function renderTodaySessions() {
   const today = getTodayKey();
   const todaySessions = data.sessions
-    .filter(s => s.user === data.currentUser && getTodayKey(s.start) === today)
+    .filter(s => getTodayKey(s.start) === today)
     .sort((a, b) => b.start - a.start);
 
   if (todaySessions.length === 0) {
@@ -717,90 +915,53 @@ function renderTodaySessions() {
   }
   return `
     <div class="sessions-log">
-      ${todaySessions.map((s, i) => `
+      ${todaySessions.map((s) => `
         <div class="session-item">
           <div>
             <div class="session-duration">${formatHours(s.duration)}</div>
-            <div class="session-time">${formatTime(s.start)} — ${formatTime(s.start + s.duration)}</div>
+            <div class="session-time">${formatTime(s.start)} - ${formatTime(s.start + s.duration)}</div>
           </div>
-          <button class="session-delete" onclick="deleteSession(${data.sessions.indexOf(s)})">✕</button>
+          <button class="session-delete" onclick="deleteSession(${data.sessions.indexOf(s)})">&#10005;</button>
         </div>
       `).join('')}
     </div>
   `;
 }
 
-function renderTabs() {
+function renderSettingsModal() {
   return `
-    <div class="tabs">
-      <button class="tab ${activeTab==='week'?'active':''}" onclick="activeTab='week';render()">Semaine</button>
-      <button class="tab ${activeTab==='month'?'active':''}" onclick="activeTab='month';render()">Mois</button>
-    </div>
-  `;
-}
-
-function renderLeaderboard() {
-  const keyFn = activeTab === 'week' ? getWeekKey : getMonthKey;
-  const currentKey = keyFn(Date.now());
-
-  // Aggregate per user
-  const totals = {};
-  Object.keys(data.users).forEach(u => { totals[u] = 0; });
-  data.sessions.forEach(s => {
-    if (keyFn(s.start) === currentKey) {
-      totals[s.user] = (totals[s.user] || 0) + s.duration;
-    }
-  });
-  // Add current running time for current user
-  if (timerStart && data.currentUser) {
-    totals[data.currentUser] = (totals[data.currentUser] || 0) + elapsed;
-  }
-
-  const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
-  const rankClasses = ['gold', 'silver', 'bronze'];
-
-  if (sorted.length === 0) {
-    return `<div class="leaderboard"><div class="empty-state">Aucune donnée</div></div>`;
-  }
-
-  return `
-    <div class="leaderboard">
-      ${sorted.map(([name, total], i) => `
-        <div class="lb-item">
-          <div class="lb-rank ${rankClasses[i] || 'default'}">${i + 1}</div>
-          <div class="lb-avatar" style="background:${avatarColor(name)}">${getInitials(name)}</div>
-          <div class="lb-info">
-            <div class="lb-name">${name}${name === data.currentUser ? '<span class="you-badge">Vous</span>' : ''}</div>
-            <div class="lb-streak">${countSessionsDays(name, currentKey, keyFn)}j actifs</div>
-          </div>
-          <div class="lb-hours">${formatHours(total)}<span class="lb-unit"></span></div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-function countSessionsDays(user, periodKey, keyFn) {
-  const days = new Set();
-  data.sessions.forEach(s => {
-    if (s.user === user && keyFn(s.start) === periodKey) {
-      days.add(getTodayKey(s.start));
-    }
-  });
-  return days.size;
-}
-
-function renderModal() {
-  return `
-    <div class="modal-overlay show" onclick="if(event.target===this){showModal=false;render()}">
+    <div class="modal-overlay show" onclick="if(event.target===this){showSettings=false;render()}">
       <div class="modal">
-        <h3>Ajouter un membre</h3>
-        <p>Ajoutez un collègue au classement</p>
-        <input type="text" id="newUserInput" placeholder="Nom complet" maxlength="30">
-        <div class="modal-actions">
-          <button class="btn btn-ghost" onclick="showModal=false;render()">Annuler</button>
-          <button class="btn btn-primary" onclick="addUser()">Ajouter</button>
+        <h3>Parametres</h3>
+
+        <div class="setting-group">
+          <div class="setting-label">Objectif journalier (heures)</div>
+          <input class="setting-input" type="number" id="goalDay" value="${settings.goalDay}" min="0" max="24" step="0.5">
         </div>
+
+        <div class="setting-group">
+          <div class="setting-label">Objectif hebdomadaire (heures)</div>
+          <input class="setting-input" type="number" id="goalWeek" value="${settings.goalWeek}" min="0" max="168" step="1">
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">Objectif annuel (heures)</div>
+          <input class="setting-input" type="number" id="goalYear" value="${settings.goalYear}" min="0" max="8760" step="10">
+        </div>
+
+        <div class="setting-group">
+          <div class="setting-label">Votre nom</div>
+          <input class="setting-input" type="text" id="settingsName" value="${data.currentUser}" maxlength="30">
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" onclick="showSettings=false;render()">Annuler</button>
+          <button class="btn btn-primary" onclick="saveSettingsForm()">Enregistrer</button>
+        </div>
+
+        <button class="btn btn-danger" onclick="if(confirm('Supprimer toutes les donnees ?')){localStorage.clear();location.reload()}">
+          Reinitialiser toutes les donnees
+        </button>
       </div>
     </div>
   `;
@@ -809,16 +970,14 @@ function renderModal() {
 // ─── Actions ───
 function toggleTimer() {
   if (timerStart) {
-    // Stop
     const duration = Date.now() - timerStart;
-    data.sessions.push({ user: data.currentUser, start: timerStart, duration });
+    data.sessions.push({ start: timerStart, duration });
     saveData(data);
     timerStart = null;
     elapsed = 0;
     clearInterval(timerInterval);
     timerInterval = null;
   } else {
-    // Start
     timerStart = Date.now();
     elapsed = 0;
     timerInterval = setInterval(() => {
@@ -843,15 +1002,23 @@ function deleteSession(idx) {
   render();
 }
 
-function addUser() {
-  const input = document.getElementById('newUserInput');
-  const name = input.value.trim();
-  if (!name) return;
-  if (!data.users[name]) {
-    data.users[name] = { name, created: Date.now() };
+function saveSettingsForm() {
+  const goalDay = parseFloat(document.getElementById('goalDay').value) || 8;
+  const goalWeek = parseFloat(document.getElementById('goalWeek').value) || 40;
+  const goalYear = parseFloat(document.getElementById('goalYear').value) || 1800;
+  const name = document.getElementById('settingsName').value.trim();
+
+  settings.goalDay = Math.max(0, Math.min(24, goalDay));
+  settings.goalWeek = Math.max(0, Math.min(168, goalWeek));
+  settings.goalYear = Math.max(0, Math.min(8760, goalYear));
+  saveSettings(settings);
+
+  if (name && name !== data.currentUser) {
+    data.currentUser = name;
     saveData(data);
   }
-  showModal = false;
+
+  showSettings = false;
   render();
 }
 
@@ -860,15 +1027,11 @@ function bindEvents() {
   if (toggleBtn) toggleBtn.addEventListener('click', toggleTimer);
   const resetBtn = document.getElementById('resetBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetTimer);
-  const newUserInput = document.getElementById('newUserInput');
-  if (newUserInput) {
-    newUserInput.focus();
-    newUserInput.addEventListener('keydown', e => { if (e.key === 'Enter') addUser(); });
-  }
 }
 
 // ─── Init ───
 render();
+window.addEventListener('resize', () => { requestAnimationFrame(drawChart); });
 </script>
 </body>
 </html>
