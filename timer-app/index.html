@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Timer - Leaderboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title">Work Timer</h1>
+            <p class="subtitle">Mesure ton temps de travail</p>
+        </header>
+
+        <!-- Main Timer Section -->
+        <section class="timer-section">
+            <div class="timer-display">
+                <div class="time">
+                    <span class="hours" id="hours">00</span>
+                    <span class="separator">:</span>
+                    <span class="minutes" id="minutes">00</span>
+                    <span class="separator">:</span>
+                    <span class="seconds" id="seconds">00</span>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="controls">
+                <button class="btn btn-primary" id="startBtn">
+                    <span class="btn-icon">▶</span>
+                    <span class="btn-text">Démarrer</span>
+                </button>
+                <button class="btn btn-secondary" id="pauseBtn" disabled>
+                    <span class="btn-icon">⏸</span>
+                    <span class="btn-text">Pause</span>
+                </button>
+                <button class="btn btn-tertiary" id="resetBtn">
+                    <span class="btn-icon">↻</span>
+                    <span class="btn-text">Réinitialiser</span>
+                </button>
+            </div>
+
+            <!-- Save Session Button -->
+            <div class="session-actions">
+                <button class="btn btn-save" id="saveSessionBtn" disabled>
+                    <span class="btn-icon">✓</span>
+                    Enregistrer la session
+                </button>
+            </div>
+        </section>
+
+        <!-- Leaderboard Tabs -->
+        <section class="leaderboard-section">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="week">
+                    <span class="tab-icon">📅</span>
+                    Cette semaine
+                </button>
+                <button class="tab-btn" data-tab="month">
+                    <span class="tab-icon">📆</span>
+                    Ce mois
+                </button>
+            </div>
+
+            <!-- Leaderboard Content -->
+            <div class="leaderboard-content">
+                <div class="leaderboard" id="weekLeaderboard">
+                    <div class="leaderboard-empty">
+                        <p>Aucune session cette semaine</p>
+                        <span class="empty-icon">🏃</span>
+                    </div>
+                </div>
+                <div class="leaderboard hidden" id="monthLeaderboard">
+                    <div class="leaderboard-empty">
+                        <p>Aucune session ce mois</p>
+                        <span class="empty-icon">🏃</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="stats-section">
+            <div class="stat-card">
+                <span class="stat-label">Total semaine</span>
+                <span class="stat-value" id="weekTotal">0h 0m</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total mois</span>
+                <span class="stat-value" id="monthTotal">0h 0m</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Sessions</span>
+                <span class="stat-value" id="sessionCount">0</span>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
