@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Focus Timer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0A0A0F;
+    --surface: #13131A;
+    --surface-alt: #1C1C27;
+    --stroke: #22222E;
+    --accent: #6C63FF;
+    --accent-soft: #8A83FF;
+    --success: #34C759;
+    --warning: #FF9F0A;
+    --destructive: #FF453A;
+    --text-primary: #F5F5FA;
+    --text-secondary: #8E8EA0;
+    --text-tertiary: #4A4A60;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── Navigation ── */
+  .app-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screens-wrapper {
+    flex: 1;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .screens-wrapper::-webkit-scrollbar { display: none; }
+
+  .screen {
+    min-width: 100vw;
+    scroll-snap-align: center;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+
+  /* ── Page Indicator ── */
+  .page-indicator {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 100;
+  }
+  .page-dot {
+    width: 8px; height: 8px;
+    border-radius: 4px;
+    background: var(--text-tertiary);
+    transition: all 0.3s ease;
+  }
+  .page-dot.active {
+    width: 24px;
+    background: var(--accent);
+  }
+
+  /* ── Settings Button ── */
+  .settings-btn {
+    position: fixed;
+    top: 20px; right: 20px;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--stroke);
+    color: var(--text-secondary);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .settings-btn:hover { background: var(--surface-alt); }
+  .settings-btn:active { transform: scale(0.92); }
+
+  /* ══════════════════════════════════════════
+     TIMER SCREEN
+     ══════════════════════════════════════════ */
+  .timer-screen {
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding-top: 60px;
+    padding-bottom: 80px;
+  }
+
+  /* Top bar */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .today-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+  }
+  .status-chip {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+  }
+  .status-chip.idle { background: var(--surface-alt); color: var(--text-tertiary); }
+  .status-chip.running { background: rgba(52,199,89,0.15); color: var(--success); }
+  .status-chip.paused { background: rgba(255,159,10,0.15); color: var(--warning); }
+
+  /* Circular timer */
+  .timer-ring-container {
+    position: relative;
+    width: 280px; height: 280px;
+  }
+  .timer-canvas {
+    width: 280px; height: 280px;
+  }
+  .timer-face {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .timer-digits {
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+  }
+  .timer-goal-pct {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* Goal bar */
+  .goal-bar-section {
+    width: 280px;
+  }
+  .goal-bar-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .goal-bar-track {
+    height: 4px;
+    background: var(--stroke);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .goal-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    border-radius: 2px;
+    transition: width 0.8s cubic-bezier(0.22,1,0.36,1);
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .ctrl-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s, opacity 0.2s;
+    font-size: 24px;
+  }
+  .ctrl-btn:active { transform: scale(0.92); }
+  .ctrl-btn.play-btn {
+    width: 72px; height: 72px;
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 0 30px rgba(108,99,255,0.3);
+  }
+  .ctrl-btn.stop-btn {
+    background: var(--surface);
+    border: 1px solid var(--stroke);
+    color: var(--text-secondary);
+  }
+  .ctrl-btn.stop-btn:hover { color: var(--destructive); }
+  .ctrl-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+    transform: none;
+  }
+
+  /* ══════════════════════════════════════════
+     ANALYTICS SCREEN
+     ══════════════════════════════════════════ */
+  .analytics-screen {
+    padding-top: 60px;
+    padding-bottom: 80px;
+    gap: 24px;
+  }
+  .analytics-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  /* Summary cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--stroke);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .summary-card-label {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .summary-card-value {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -1px;
+  }
+  .summary-card-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  /* View mode tabs */
+  .view-tabs {
+    display: flex;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .view-tab {
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .view-tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Chart */
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--stroke);
+    border-radius: 16px;
+    padding: 20px;
+    height: 240px;
+    position: relative;
+  }
+  .chart-canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ══════════════════════════════════════════
+     SOCIAL SCREEN
+     ══════════════════════════════════════════ */
+  .social-screen {
+    padding-top: 60px;
+    padding-bottom: 80px;
+    gap: 24px;
+  }
+  .social-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .social-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: -16px;
+  }
+
+  /* Podium */
+  .podium {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 8px;
+    height: 180px;
+  }
+  .podium-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .podium-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    color: #fff;
+  }
+  .podium-slot.first .podium-avatar { width: 56px; height: 56px; font-size: 18px; }
+  .podium-name { font-size: 12px; font-weight: 600; }
+  .podium-hours { font-size: 11px; color: var(--text-secondary); }
+  .podium-bar {
+    width: 80px;
+    border-radius: 12px 12px 0 0;
+    background: var(--surface);
+    border: 1px solid var(--stroke);
+    border-bottom: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+  }
+  .podium-slot.first .podium-bar {
+    background: linear-gradient(180deg, rgba(108,99,255,0.15), transparent);
+    border-color: rgba(108,99,255,0.3);
+  }
+
+  /* Leaderboard list */
+  .leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--stroke);
+    border-radius: 12px;
+    transition: background 0.2s;
+  }
+  .lb-row.is-me {
+    border-color: rgba(108,99,255,0.4);
+    background: rgba(108,99,255,0.08);
+  }
+  .lb-rank {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    width: 24px;
+    text-align: center;
+  }
+  .lb-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #fff;
+  }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 14px; font-weight: 500; }
+  .lb-hours-text { font-size: 12px; color: var(--text-secondary); }
+  .lb-bar-track {
+    width: 60px; height: 4px;
+    background: var(--stroke);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .lb-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ══════════════════════════════════════════
+     SETTINGS MODAL
+     ══════════════════════════════════════════ */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .settings-modal {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    padding-bottom: 40px;
+    z-index: 201;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-overlay.open .settings-modal {
+    transform: translateY(0);
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--text-tertiary);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .settings-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--stroke);
+  }
+  .setting-label {
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .setting-label span {
+    display: block;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .stepper-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface-alt);
+    border: 1px solid var(--stroke);
+    color: var(--text-primary);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s;
+  }
+  .stepper-btn:active { transform: scale(0.92); }
+  .stepper-value {
+    font-size: 16px;
+    font-weight: 600;
+    min-width: 56px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Reset button */
+  .reset-section {
+    margin-top: 24px;
+    text-align: center;
+  }
+  .reset-btn {
+    padding: 12px 24px;
+    background: rgba(255,69,58,0.1);
+    border: 1px solid rgba(255,69,58,0.3);
+    border-radius: 12px;
+    color: var(--destructive);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .reset-btn:hover { background: rgba(255,69,58,0.2); }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in {
+    animation: fadeInUp 0.5s ease forwards;
+  }
+  .animate-in:nth-child(2) { animation-delay: 0.1s; }
+  .animate-in:nth-child(3) { animation-delay: 0.2s; }
+  .animate-in:nth-child(4) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Settings button -->
+  <button class="settings-btn" onclick="toggleSettings()">&#9881;</button>
+
+  <div class="screens-wrapper" id="screensWrapper">
+
+    <!-- ═══ ANALYTICS SCREEN ═══ -->
+    <div class="screen analytics-screen" id="analyticsScreen">
+      <h1 class="analytics-title animate-in">Analytics</h1>
+
+      <div class="summary-cards animate-in">
+        <div class="summary-card">
+          <div class="summary-card-label">Today</div>
+          <div class="summary-card-value" id="statToday">0h 0m</div>
+          <div class="summary-card-sub" id="statTodayPct">0% of goal</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-label">This Week</div>
+          <div class="summary-card-value" id="statWeek">0h 0m</div>
+          <div class="summary-card-sub" id="statWeekPct">0% of goal</div>
+        </div>
+      </div>
+
+      <div class="view-tabs animate-in">
+        <button class="view-tab active" onclick="setChartView('day')">Day</button>
+        <button class="view-tab" onclick="setChartView('week')">Week</button>
+        <button class="view-tab" onclick="setChartView('month')">Month</button>
+      </div>
+
+      <div class="chart-container animate-in">
+        <canvas class="chart-canvas" id="chartCanvas"></canvas>
+      </div>
+    </div>
+
+    <!-- ═══ TIMER SCREEN ═══ -->
+    <div class="screen timer-screen" id="timerScreen">
+      <div class="top-bar animate-in">
+        <span class="today-label" id="todayLabel">Today: 0h 0m 0s</span>
+        <span class="status-chip idle" id="statusChip">READY</span>
+      </div>
+
+      <div class="timer-ring-container animate-in">
+        <canvas class="timer-canvas" id="timerCanvas" width="560" height="560"></canvas>
+        <div class="timer-face">
+          <div class="timer-digits" id="timerDigits">00:00</div>
+          <div class="timer-goal-pct" id="timerGoalPct">0% of daily goal</div>
+        </div>
+      </div>
+
+      <div class="goal-bar-section animate-in">
+        <div class="goal-bar-header">
+          <span>Daily goal</span>
+          <span id="goalBarPct">0%</span>
+        </div>
+        <div class="goal-bar-track">
+          <div class="goal-bar-fill" id="goalBarFill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="controls animate-in">
+        <button class="ctrl-btn stop-btn" id="stopBtn" disabled onclick="stopTimer()">&#9632;</button>
+        <button class="ctrl-btn play-btn" id="playBtn" onclick="togglePlayPause()">&#9654;</button>
+      </div>
+    </div>
+
+    <!-- ═══ SOCIAL SCREEN ═══ -->
+    <div class="screen social-screen" id="socialScreen">
+      <h1 class="social-title animate-in">Leaderboard</h1>
+      <p class="social-subtitle animate-in">This week's focus hours</p>
+
+      <div class="podium animate-in" id="podium"></div>
+      <div class="leaderboard-list animate-in" id="leaderboardList"></div>
+    </div>
+  </div>
+
+  <!-- Page indicator -->
+  <div class="page-indicator">
+    <div class="page-dot" id="dot0"></div>
+    <div class="page-dot active" id="dot1"></div>
+    <div class="page-dot" id="dot2"></div>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div class="modal-overlay" id="settingsOverlay" onclick="closeSettingsOutside(event)">
+  <div class="settings-modal">
+    <div class="modal-handle"></div>
+    <div class="settings-title">Settings</div>
+
+    <div class="setting-row">
+      <div class="setting-label">Daily Goal<span>Hours of focus per day</span></div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustGoal('daily',-1800)">−</button>
+        <span class="stepper-value" id="dailyGoalDisplay">8h</span>
+        <button class="stepper-btn" onclick="adjustGoal('daily',1800)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-label">Weekly Goal<span>Hours of focus per week</span></div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustGoal('weekly',-3600)">−</button>
+        <span class="stepper-value" id="weeklyGoalDisplay">40h</span>
+        <button class="stepper-btn" onclick="adjustGoal('weekly',3600)">+</button>
+      </div>
+    </div>
+
+    <div class="reset-section">
+      <button class="reset-btn" onclick="resetAllData()">Reset All Data</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const STATE = {
+  status: 'idle', // idle | running | paused
+  elapsed: 0,     // seconds in current session
+  startTime: null,
+  pausedAt: null,
+  sessions: [],
+  dailyGoalSec: 8 * 3600,
+  weeklyGoalSec: 40 * 3600,
+  chartView: 'day',
+  tickInterval: null,
+};
+
+// ══════════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════════
+function save() {
+  const data = {
+    sessions: STATE.sessions,
+    dailyGoalSec: STATE.dailyGoalSec,
+    weeklyGoalSec: STATE.weeklyGoalSec,
+  };
+  localStorage.setItem('focusTimer', JSON.stringify(data));
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem('focusTimer');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    STATE.sessions = (data.sessions || []).map(s => ({
+      ...s,
+      startTime: new Date(s.startTime),
+      endTime: new Date(s.endTime),
+    }));
+    STATE.dailyGoalSec = data.dailyGoalSec || 8 * 3600;
+    STATE.weeklyGoalSec = data.weeklyGoalSec || 40 * 3600;
+  } catch(e) { console.warn('Load failed', e); }
+}
+
+// ══════════════════════════════════════════
+// TIMER LOGIC
+// ══════════════════════════════════════════
+function togglePlayPause() {
+  if (STATE.status === 'idle' || STATE.status === 'paused') {
+    startTimer();
+  } else if (STATE.status === 'running') {
+    pauseTimer();
+  }
+}
+
+function startTimer() {
+  if (STATE.status === 'idle') {
+    STATE.startTime = new Date();
+    STATE.elapsed = 0;
+  }
+  STATE.status = 'running';
+  STATE.pausedAt = null;
+  STATE.tickInterval = setInterval(tick, 1000);
+  updateUI();
+}
+
+function pauseTimer() {
+  STATE.status = 'paused';
+  STATE.pausedAt = new Date();
+  clearInterval(STATE.tickInterval);
+  updateUI();
+}
+
+function stopTimer() {
+  clearInterval(STATE.tickInterval);
+  if (STATE.elapsed >= 5 && STATE.startTime) {
+    STATE.sessions.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+      startTime: STATE.startTime,
+      endTime: new Date(),
+    });
+    save();
+  }
+  STATE.status = 'idle';
+  STATE.elapsed = 0;
+  STATE.startTime = null;
+  STATE.pausedAt = null;
+  updateUI();
+}
+
+function tick() {
+  STATE.elapsed++;
+  updateUI();
+}
+
+// ══════════════════════════════════════════
+// COMPUTED
+// ══════════════════════════════════════════
+function todayTotal() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let total = STATE.sessions
+    .filter(s => s.startTime >= start)
+    .reduce((sum, s) => sum + (s.endTime - s.startTime) / 1000, 0);
+  if (STATE.status !== 'idle') total += STATE.elapsed;
+  return total;
+}
+
+function weekTotal() {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((day + 6) % 7));
+  monday.setHours(0,0,0,0);
+  let total = STATE.sessions
+    .filter(s => s.startTime >= monday)
+    .reduce((sum, s) => sum + (s.endTime - s.startTime) / 1000, 0);
+  if (STATE.status !== 'idle') total += STATE.elapsed;
+  return total;
+}
+
+function weeklyBreakdown() {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((day + 6) % 7));
+  monday.setHours(0,0,0,0);
+  const result = [0,0,0,0,0,0,0]; // Mon-Sun
+  STATE.sessions.filter(s => s.startTime >= monday).forEach(s => {
+    const d = (s.startTime.getDay() + 6) % 7;
+    result[d] += (s.endTime - s.startTime) / 1000;
+  });
+  // add current session to its day
+  if (STATE.status !== 'idle' && STATE.startTime) {
+    const d = (STATE.startTime.getDay() + 6) % 7;
+    result[d] += STATE.elapsed;
+  }
+  return result;
+}
+
+function hourlyBreakdown() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const result = new Array(24).fill(0);
+  STATE.sessions.filter(s => s.startTime >= start).forEach(s => {
+    const h = s.startTime.getHours();
+    result[h] += (s.endTime - s.startTime) / 1000;
+  });
+  if (STATE.status !== 'idle' && STATE.startTime) {
+    const h = STATE.startTime.getHours();
+    result[h] += STATE.elapsed;
+  }
+  return result;
+}
+
+function monthlyBreakdown() {
+  const now = new Date();
+  const result = new Array(30).fill(0);
+  for (let i = 0; i < 30; i++) {
+    const day = new Date(now);
+    day.setDate(now.getDate() - (29 - i));
+    day.setHours(0,0,0,0);
+    const next = new Date(day);
+    next.setDate(day.getDate() + 1);
+    STATE.sessions.filter(s => s.startTime >= day && s.startTime < next).forEach(s => {
+      result[i] += (s.endTime - s.startTime) / 1000;
+    });
+  }
+  // add current to today
+  if (STATE.status !== 'idle') result[29] += STATE.elapsed;
+  return result;
+}
+
+// ══════════════════════════════════════════
+// FORMAT HELPERS
+// ══════════════════════════════════════════
+function fmtHMS(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  return `${h}h ${m}m ${s}s`;
+}
+function fmtHM(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+function fmtTimer(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const pad = n => n.toString().padStart(2, '0');
+  if (h > 0) return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  return `${pad(m)}:${pad(s)}`;
+}
+function fmtGoal(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (m === 0) return `${h}h`;
+  if (h === 0) return `${m}m`;
+  return `${h}h ${m}m`;
+}
+
+// ══════════════════════════════════════════
+// UI UPDATE
+// ══════════════════════════════════════════
+function updateUI() {
+  const tt = todayTotal();
+  const wt = weekTotal();
+  const dp = Math.min(tt / STATE.dailyGoalSec, 1);
+  const wp = Math.min(wt / STATE.weeklyGoalSec, 1);
+
+  // Timer screen
+  document.getElementById('todayLabel').textContent = `Today: ${fmtHMS(tt)}`;
+  const chip = document.getElementById('statusChip');
+  chip.className = 'status-chip ' + STATE.status;
+  chip.textContent = STATE.status === 'idle' ? 'READY' : STATE.status.toUpperCase();
+
+  document.getElementById('timerDigits').textContent = fmtTimer(STATE.elapsed);
+  document.getElementById('timerGoalPct').textContent = `${Math.round(dp * 100)}% of daily goal`;
+  document.getElementById('goalBarPct').textContent = `${Math.round(dp * 100)}%`;
+  document.getElementById('goalBarFill').style.width = `${dp * 100}%`;
+
+  // Play/pause button
+  const playBtn = document.getElementById('playBtn');
+  playBtn.innerHTML = STATE.status === 'running' ? '&#10074;&#10074;' : '&#9654;';
+  document.getElementById('stopBtn').disabled = STATE.status === 'idle';
+
+  // Analytics
+  document.getElementById('statToday').textContent = fmtHM(tt);
+  document.getElementById('statTodayPct').textContent = `${Math.round(dp * 100)}% of goal`;
+  document.getElementById('statWeek').textContent = fmtHM(wt);
+  document.getElementById('statWeekPct').textContent = `${Math.round(wp * 100)}% of goal`;
+
+  drawTimerRing(dp);
+  drawChart();
+  updateSettings();
+}
+
+// ══════════════════════════════════════════
+// CIRCULAR TIMER (Canvas)
+// ══════════════════════════════════════════
+function drawTimerRing(progress) {
+  const canvas = document.getElementById('timerCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const cx = w / 2, cy = h / 2;
+  const r = (w / 2) - 20;
+
+  ctx.clearRect(0, 0, w, h);
+
+  // Track ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#22222E';
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  if (progress <= 0) return;
+
+  const startAngle = -Math.PI / 2;
+  const endAngle = startAngle + (Math.PI * 2 * progress);
+
+  // Glow pass
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startAngle, endAngle);
+  ctx.strokeStyle = 'rgba(108,99,255,0.4)';
+  ctx.lineWidth = 28;
+  ctx.lineCap = 'round';
+  ctx.filter = 'blur(12px)';
+  ctx.stroke();
+  ctx.restore();
+
+  // Progress arc with gradient
+  const grad = ctx.createConicGradient(startAngle, cx, cy);
+  grad.addColorStop(0, '#6C63FF');
+  grad.addColorStop(progress, '#AE8FFF');
+  grad.addColorStop(progress + 0.001, 'transparent');
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, startAngle, endAngle);
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 10;
+  ctx.lineCap = 'round';
+  ctx.filter = 'none';
+  ctx.stroke();
+
+  // Tip dot
+  const tipX = cx + r * Math.cos(endAngle);
+  const tipY = cy + r * Math.sin(endAngle);
+  ctx.beginPath();
+  ctx.arc(tipX, tipY, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#AE8FFF';
+  ctx.fill();
+}
+
+// ══════════════════════════════════════════
+// CHART
+// ══════════════════════════════════════════
+function setChartView(view) {
+  STATE.chartView = view;
+  document.querySelectorAll('.view-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['day','week','month'][i] === view);
+  });
+  drawChart();
+}
+
+function drawChart() {
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width - 40;
+  canvas.height = rect.height - 40;
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  let data, labels, maxVal;
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  if (STATE.chartView === 'day') {
+    data = hourlyBreakdown().map(s => s / 60); // minutes
+    labels = Array.from({length: 24}, (_, i) => i % 6 === 0 ? `${i}h` : '');
+    maxVal = Math.max(60, ...data);
+  } else if (STATE.chartView === 'week') {
+    data = weeklyBreakdown().map(s => s / 3600); // hours
+    labels = dayNames;
+    maxVal = Math.max(10, ...data);
+  } else {
+    data = monthlyBreakdown().map(s => s / 3600);
+    labels = Array.from({length: 30}, (_, i) => (i+1) % 7 === 0 ? `${i+1}` : '');
+    maxVal = Math.max(10, ...data);
+  }
+
+  const padding = {left: 30, bottom: 24, top: 10, right: 10};
+  const chartW = w - padding.left - padding.right;
+  const chartH = h - padding.top - padding.bottom;
+
+  // Y axis labels
+  ctx.fillStyle = '#4A4A60';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const val = Math.round(maxVal / 4 * i);
+    const y = padding.top + chartH - (chartH * i / 4);
+    ctx.fillText(val.toString(), padding.left - 6, y + 3);
+    // grid line
+    ctx.strokeStyle = 'rgba(74,74,96,0.2)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(w - padding.right, y);
+    ctx.stroke();
+  }
+
+  // X axis labels
+  ctx.textAlign = 'center';
+  labels.forEach((label, i) => {
+    if (!label) return;
+    const x = padding.left + (chartW * i / (data.length - 1 || 1));
+    ctx.fillText(label, x, h - 4);
+  });
+
+  if (STATE.chartView === 'week') {
+    // Bar chart
+    const barW = chartW / data.length * 0.6;
+    const gap = chartW / data.length;
+    data.forEach((val, i) => {
+      const barH = (val / maxVal) * chartH;
+      const x = padding.left + gap * i + (gap - barW) / 2;
+      const y = padding.top + chartH - barH;
+
+      const grad = ctx.createLinearGradient(x, y, x, y + barH);
+      grad.addColorStop(0, '#6C63FF');
+      grad.addColorStop(1, 'rgba(108,99,255,0.3)');
+      ctx.fillStyle = grad;
+
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, barH, 4);
+      ctx.fill();
+    });
+    // X labels for bars
+    ctx.fillStyle = '#4A4A60';
+    dayNames.forEach((name, i) => {
+      const x = padding.left + gap * i + gap / 2;
+      ctx.fillText(name, x, h - 4);
+    });
+  } else {
+    // Line chart
+    ctx.beginPath();
+    data.forEach((val, i) => {
+      const x = padding.left + (chartW * i / (data.length - 1 || 1));
+      const y = padding.top + chartH - (val / maxVal) * chartH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = '#6C63FF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Fill gradient area
+    const lastX = padding.left + chartW;
+    ctx.lineTo(lastX, padding.top + chartH);
+    ctx.lineTo(padding.left, padding.top + chartH);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
+    grad.addColorStop(0, 'rgba(108,99,255,0.3)');
+    grad.addColorStop(1, 'rgba(108,99,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+}
+
+// ══════════════════════════════════════════
+// SOCIAL / LEADERBOARD
+// ══════════════════════════════════════════
+const LEADERBOARD = [
+  { name: 'Sophie M.', initials: 'SM', hours: 42.5, color: '#FF6B6B' },
+  { name: 'Alex K.', initials: 'AK', hours: 38.2, color: '#4ECDC4' },
+  { name: 'You', initials: 'AG', hours: 0, color: '#6C63FF', isMe: true },
+  { name: 'Jordan L.', initials: 'JL', hours: 28.0, color: '#FFE66D' },
+  { name: 'Taylor R.', initials: 'TR', hours: 22.3, color: '#A8E6CF' },
+  { name: 'Morgan P.', initials: 'MP', hours: 18.7, color: '#FF8A5C' },
+];
+
+function renderLeaderboard() {
+  // Update "You" hours
+  const myEntry = LEADERBOARD.find(e => e.isMe);
+  myEntry.hours = parseFloat((weekTotal() / 3600).toFixed(1));
+
+  const sorted = [...LEADERBOARD].sort((a, b) => b.hours - a.hours);
+  const maxH = sorted[0].hours || 1;
+
+  // Podium (top 3)
+  const podium = document.getElementById('podium');
+  const order = [1, 0, 2]; // 2nd, 1st, 3rd
+  const heights = [100, 140, 80];
+  podium.innerHTML = order.map((idx, pos) => {
+    const e = sorted[idx];
+    if (!e) return '';
+    const crown = idx === 0 ? '&#128081; ' : '';
+    return `<div class="podium-slot ${idx === 0 ? 'first' : ''}">
+      <div class="podium-avatar" style="background:${e.color}">${e.initials}</div>
+      <div class="podium-name">${crown}${e.name}</div>
+      <div class="podium-hours">${e.hours}h</div>
+      <div class="podium-bar" style="height:${heights[pos]}px">${idx + 1}</div>
+    </div>`;
+  }).join('');
+
+  // Full list
+  const list = document.getElementById('leaderboardList');
+  list.innerHTML = sorted.map((e, i) => `
+    <div class="lb-row ${e.isMe ? 'is-me' : ''}">
+      <span class="lb-rank">${i + 1}</span>
+      <div class="lb-avatar" style="background:${e.color}">${e.initials}</div>
+      <div class="lb-info">
+        <div class="lb-name">${e.name}</div>
+        <div class="lb-hours-text">${e.hours}h this week</div>
+      </div>
+      <div class="lb-bar-track">
+        <div class="lb-bar-fill" style="width:${(e.hours / maxH * 100)}%"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+function toggleSettings() {
+  document.getElementById('settingsOverlay').classList.toggle('open');
+}
+
+function closeSettingsOutside(e) {
+  if (e.target === document.getElementById('settingsOverlay')) {
+    toggleSettings();
+  }
+}
+
+function adjustGoal(type, delta) {
+  if (type === 'daily') {
+    STATE.dailyGoalSec = Math.max(1800, Math.min(57600, STATE.dailyGoalSec + delta));
+  } else {
+    STATE.weeklyGoalSec = Math.max(3600, Math.min(288000, STATE.weeklyGoalSec + delta));
+  }
+  save();
+  updateUI();
+}
+
+function updateSettings() {
+  document.getElementById('dailyGoalDisplay').textContent = fmtGoal(STATE.dailyGoalSec);
+  document.getElementById('weeklyGoalDisplay').textContent = fmtGoal(STATE.weeklyGoalSec);
+}
+
+function resetAllData() {
+  if (!confirm('Reset all sessions and goals? This cannot be undone.')) return;
+  STATE.sessions = [];
+  STATE.dailyGoalSec = 8 * 3600;
+  STATE.weeklyGoalSec = 40 * 3600;
+  save();
+  stopTimer();
+  updateUI();
+  renderLeaderboard();
+}
+
+// ══════════════════════════════════════════
+// PAGE INDICATOR / SCROLL
+// ══════════════════════════════════════════
+const wrapper = document.getElementById('screensWrapper');
+wrapper.addEventListener('scroll', () => {
+  const page = Math.round(wrapper.scrollLeft / window.innerWidth);
+  for (let i = 0; i < 3; i++) {
+    document.getElementById(`dot${i}`).classList.toggle('active', i === page);
+  }
+  if (page === 2) renderLeaderboard();
+});
+
+// Start on timer screen (page 1)
+setTimeout(() => {
+  wrapper.scrollTo({ left: window.innerWidth, behavior: 'instant' });
+}, 50);
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+load();
+updateUI();
+renderLeaderboard();
+
+// Redraw chart on resize
+window.addEventListener('resize', drawChart);
+</script>
+</body>
+</html>
